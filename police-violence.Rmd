@@ -1,0 +1,28 @@
+---
+title: "Mapping Police Violence"
+author: "Eamon Caddigan"
+date: "December 21, 2015"
+output: html_document
+---
+
+[Mapping Police Violence](http://mappingpoliceviolence.org/) just released [their 2015 Police Violence Report](http://mappingpoliceviolence.org/2015/), along with the data supporting it. 
+
+One of the most stunning conclusions of the original report is the finding that community violence does not predict police violence. This disproves a common narrative that police are simply responding to violence in kind, and suggests that department policy plays a role in police behavior.
+
+![Police Violence and Community Violence are Independent Issues](MPV-community-police-violence.jpg)
+
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+
+mpvData <- read_excel("MPVDatasetDownload-83zj.xlsx", sheet = 1)
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
