@@ -14,15 +14,58 @@ One of the most stunning conclusions of the original report is the finding that 
 ```{r}
 library(readxl)
 library(dplyr)
+library(tidyr)
 library(ggplot2)
+library(gtable)
+library(grid)
 
-mpvData <- read_excel("MPVDatasetDownload-83zj.xlsx", sheet = 1)
+mpvReport <- read_excel("MPVDatasetDownload-83zj.xlsx", sheet = 2) 
+
+mpvReport <- mpvReport %>%
+  mutate(`Police Department` = sub("^[^[:alpha:]]*", "", `Police Department`),
+         row_number = 1:nrow(.)) %>% 
+  filter(row_number <= 60)
+
+# From https://rpubs.com/kohske/dual_axis_in_ggplot2
+p1 <- ggplot(mpvReport, aes(x = row_number, 
+                            y = `Rate of Police Killings per Million Population`)) + 
+  geom_bar(color = "black", fill = "white", stat = "identity") +
+  geom_point(size = 3) +
+  theme_classic() +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  scale_x_continuous(limits = c(0.5, 60.5),
+                     breaks = 1:60,
+                     labels = mpvReport$`Police Department`)
+p2 <- ggplot(mpvReport, aes(x = row_number,
+                            y = `Violent Crime per 1,000 residents`)) +
+  geom_point(color = "blue", shape = 8) +
+  theme_classic() + 
+  theme(panel.background = element_rect(fill = NA),
+        axis.text.x=element_text(angle = -90, hjust = 0)) +
+  scale_x_continuous(limits = c(0.5, 60.5),
+                     breaks = 1:60,
+                     labels = mpvReport$`Police Department`)
+
+# extract gtable
+g1 <- ggplot_gtable(ggplot_build(p1))
+g2 <- ggplot_gtable(ggplot_build(p2))
+
+# overlap the panel of 2nd plot on that of 1st plot
+pp <- c(subset(g1$layout, name == "panel", se = t:r))
+g <- gtable_add_grob(g1, g2$grobs[[which(g2$layout$name == "panel")]], pp$t, 
+                     pp$l, pp$b, pp$l)
+
+# axis tweaks
+ia <- which(g2$layout$name == "axis-l")
+ga <- g2$grobs[[ia]]
+ax <- ga$children[[2]]
+ax$widths <- rev(ax$widths)
+ax$grobs <- rev(ax$grobs)
+ax$grobs[[1]]$x <- ax$grobs[[1]]$x - unit(1, "npc") + unit(0.15, "cm")
+g <- gtable_add_cols(g, g2$widths[g2$layout[ia, ]$l], length(g$widths) - 1)
+g <- gtable_add_grob(g, ax, pp$t, length(g$widths) - 1, pp$b)
+
+# draw it
+grid.draw(g)
 ```
 
-You can also embed plots, for example:
-
-```{r, echo=FALSE}
-plot(cars)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
