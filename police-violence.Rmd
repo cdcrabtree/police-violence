@@ -7,9 +7,9 @@ output: html_document
 
 [Mapping Police Violence](http://mappingpoliceviolence.org/) just released [their 2015 Police Violence Report](http://mappingpoliceviolence.org/2015/), along with the data supporting it. 
 
-One of the most stunning conclusions of the original report is the finding that community violence does not predict police violence. This disproves a common narrative that police are simply responding to violence in kind, and suggests that department policy plays a role in police behavior.
+One of the most stunning conclusions of the original report is the finding that community violence does not predict police violence. This disproves a common narrative that police are simply responding to violence in kind, and suggests that department policy plays a role in police behavior. 
 
-![Police Violence and Community Violence are Independent Issues](MPV-community-police-violence.jpg)
+Here I take a stab at recreating the graph that accompanies the report. It plots community and police violence in the figure, with separate Y-axes for the factors.
 
 ```{r}
 library(readxl)
@@ -31,18 +31,20 @@ p1 <- ggplot(mpvReport, aes(x = row_number,
                             y = `Rate of Police Killings per Million Population`)) + 
   geom_bar(color = "black", fill = "white", stat = "identity") +
   geom_point(size = 3) +
-  theme_classic() +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
-  scale_x_continuous(limits = c(0.5, 60.5),
+  theme_classic() %+replace%
+  theme(axis.text.x=element_text(angle = 90, hjust = 1)) +
+  scale_x_continuous(name = "",
+                     limits = c(0.5, 60.5),
                      breaks = 1:60,
                      labels = mpvReport$`Police Department`)
 p2 <- ggplot(mpvReport, aes(x = row_number,
                             y = `Violent Crime per 1,000 residents`)) +
   geom_point(color = "blue", shape = 8) +
-  theme_classic() + 
+  theme_classic() %+replace%
   theme(panel.background = element_rect(fill = NA),
-        axis.text.x=element_text(angle = -90, hjust = 0)) +
-  scale_x_continuous(limits = c(0.5, 60.5),
+        axis.text.x=element_text(angle = 90, hjust = 1)) +
+  scale_x_continuous(name = "",
+                     limits = c(0.5, 60.5),
                      breaks = 1:60,
                      labels = mpvReport$`Police Department`)
 
