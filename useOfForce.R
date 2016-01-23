@@ -5,6 +5,8 @@ library(readxl)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(grid)
+library(gridExtra)
 
 forcePolicy <- read_excel("UseofForcePolicyReview-bbdj.xlsx")
 # The column names are pretty long
@@ -13,12 +15,12 @@ colnames(forcePolicy) <- sub(":.*", "", colnames(forcePolicy))
 # Strip answers down to TRUE (yes) / FALSE (no) values
 yesOrNo <- function(x) {
   ifelse(grepl("^Yes", x), 
-         TRUE,
+         "Yes",
          ifelse(grepl("^No", x),
-                FALSE,
+                "No",
                 NA))
 }
-forcePolicy <- mutate_each(forcePolicy, funs(yesOrNo), 2:ncol(forcePolicy))
+forcePolicy <- mutate_each(forcePolicy, funs(yesOrNo), -`Police Department`)
 
 # Now look at the mapping police violence project's report to find these
 # departments.
@@ -42,19 +44,36 @@ forcePolicy <- cbind(forcePolicy, mpvReport[matches, ])
 
 # Now let's see how these policies may effect police killings
 policyEffectiveness <- forcePolicy %>%
-  select(department = `Police Department`, 2:9, rate_of_killings = `Rate of Police Killings per Million Population`) %>%
+  select(department = `Police Department`, 
+         2:9, 
+         rate_of_killings = `Rate of Police Killings per Million Population`,
+         population = `2014 population (US Census)`) %>%
   gather("policy", "in_place", 2:9)
 
 # Plot it
-ggplot(policyEffectiveness, aes(x = in_place, y = rate_of_killings)) + 
-  geom_point(aes(color = in_place), 
-             position = position_jitter(width = 0.3, height = 0.0)) + 
+p <- ggplot(policyEffectiveness, aes(x = in_place, y = rate_of_killings)) + 
+  geom_point(aes(color = in_place, size = population), 
+             alpha = 0.5,
+             position = position_jitter(width = 0.4, height = 0.0)) + 
   facet_wrap(~ policy) + 
-  labs(title = "The effect of department policies on police killings", 
+  labs(title = "The effect of department policies on killings by police", 
        x = "Policy in place", 
-       y = "Rate of police killings (per million population)") + 
-  theme(legend.position = "none")
-ggsave("all police force policies.png")
+       y = "Citizens killed by police (per million population)") + 
+  scale_color_discrete(guide = FALSE) +
+  scale_size_area(name = "City population",
+                  breaks = seq(2e06, 8e06, length.out = 4),
+                  labels = paste(seq(2, 8, length.out = 4), " million")) +
+  theme(legend.position = c(0.85, 0.15))
+print(p)
+pCaption <- textGrob(paste(" ",
+                           "Police killing data: http://mappingpoliceviolence.org/",
+                           "Police departmental policy data: http://useofforceproject.org/",
+                           sep = "\n"), 
+                     x = 0, 
+                     just = c("left", "bottom"), 
+                     gp = gpar(fontface = "italic", fontsize = 12))
+pWithCaption <- arrangeGrob(p, bottom = pCaption)
+ggsave("all police force policies.png", pWithCaption, dpi=120)
 
 # Wow. Zero in on de-escalation though.
 policyEffectiveness %>% 
